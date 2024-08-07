@@ -122,6 +122,10 @@ func AddTask(c *gin.Context) {
 				errorMessages["due_date"] = "DueDate is required."
 			}
 		}
+		if len(errorMessages) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "DueDate is required."})
+			return
+		}
 
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errorMessages})
 		return
