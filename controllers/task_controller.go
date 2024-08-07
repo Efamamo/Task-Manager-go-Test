@@ -11,16 +11,21 @@ import (
 )
 
 func GetTasks(c *gin.Context) {
-	tasks := data.GetTasks()
+	tasks, err := data.GetTasks()
+
+	if err != nil {
+		c.IndentedJSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+	}
+
 	c.IndentedJSON(http.StatusOK, tasks)
 }
 
 func GetTaskById(c *gin.Context) {
 	id := c.Param("id")
-	task := data.GetTaskById(id)
+	task, err := data.GetTaskByID(id)
 
-	if task == nil {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Task Not Found"})
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -59,14 +64,18 @@ func UpdateItem(c *gin.Context) {
 
 	task, err := data.UpdateItem(id, updatedTask)
 
-	if err != nil && err.Error() == "Status Error" {
+	if err != nil && err.Error() == "status error" {
 		fmt.Println(err)
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Status can only be Pending or In Progress or Completed"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Status can only be Pending or In Progress or Completed"})
 		return
 	}
 
-	if err != nil && err.Error() == "Not Found" {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Task Not Found"})
+	if err != nil && err.Error() == "task Not Found" {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "Task Not Found"})
+		return
+	}
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -75,10 +84,10 @@ func UpdateItem(c *gin.Context) {
 
 func DeleteTask(c *gin.Context) {
 	id := c.Param("id")
-	task := data.DeleteTask(id)
+	task, err := data.DeleteTask(id)
 
-	if task == nil {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Task Not Found"})
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -121,7 +130,7 @@ func AddTask(c *gin.Context) {
 	task, err := data.AddTask(newTask)
 
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Status can only be Pending or In Progress or Completed"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Status can only be Pending or In Progress or Completed"})
 		return
 	}
 
