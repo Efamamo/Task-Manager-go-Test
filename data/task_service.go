@@ -40,7 +40,6 @@ func init() {
 	fmt.Println("Connected to MongoDB!")
 }
 
-// Get the collection
 func GetTasks() (*[]model.Task, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -129,8 +128,7 @@ func UpdateItem(ID string, updatedTask model.Task) (*model.Task, error) {
 	}
 
 	// Update the document that matches the filter
-	result, err := collection.UpdateOne(ctx, filter, update)
-	fmt.Println(result)
+	_, err = collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return nil, err
 	}
@@ -163,8 +161,8 @@ func DeleteTask(ID string) (*model.Task, error) {
 	filter := bson.M{"_id": id}
 
 	// Delete the document that matches the filter
-	result, err := collection.DeleteOne(ctx, filter)
-	fmt.Println(result)
+	_, err = collection.DeleteOne(ctx, filter)
+
 	if err != nil {
 		return nil, err
 	}
@@ -182,8 +180,7 @@ func AddTask(task model.Task) (*model.Task, error) {
 
 	task.ID = primitive.NewObjectID()
 
-	insertResult, err := collection.InsertOne(ctx, task)
-	fmt.Println(insertResult)
+	_, err := collection.InsertOne(ctx, task)
 	if err != nil {
 		log.Fatal(err)
 	}
