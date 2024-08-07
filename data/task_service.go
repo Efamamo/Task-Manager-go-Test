@@ -146,7 +146,7 @@ func UpdateItem(ID string, updatedTask model.Task) (*model.Task, error) {
 }
 
 func DeleteTask(ID string) (*model.Task, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	id, err := primitive.ObjectIDFromHex(ID)
 
@@ -174,14 +174,15 @@ func DeleteTask(ID string) (*model.Task, error) {
 }
 
 func AddTask(task model.Task) (*model.Task, error) {
-
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 	if strings.ToLower(task.Status) != "in progress" && strings.ToLower(task.Status) != "completed" && strings.ToLower(task.Status) != "pending" {
 		return nil, errors.New("status error")
 	}
 
 	task.ID = primitive.NewObjectID()
 
-	insertResult, err := collection.InsertOne(context.TODO(), task)
+	insertResult, err := collection.InsertOne(ctx, task)
 	fmt.Println(insertResult)
 	if err != nil {
 		log.Fatal(err)
