@@ -21,7 +21,8 @@ var collection *mongo.Collection
 
 // Initialize MongoDB connection once
 func init() {
-	clientOptions := options.Client().ApplyURI("mongodb+srv://<username>:<password>@cluster0.avreuwg.mongodb.net/")
+
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:2717")
 
 	// Connect to MongoDB
 	var err error
@@ -38,6 +39,7 @@ func init() {
 
 	collection = client.Database("task-management").Collection("tasks")
 	fmt.Println("Connected to MongoDB!")
+
 }
 
 func GetTasks() (*[]model.Task, error) {
@@ -76,21 +78,19 @@ func GetTaskByID(id string) (*model.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Convert the id string to a MongoDB ObjectID
-	objectID, err := primitive.ObjectIDFromHex(id)
+	objectId, err := primitive.ObjectIDFromHex(id)
+
 	if err != nil {
 		return nil, err
 	}
 
-	// Create a filter to match the specific ID
-	filter := bson.M{"_id": objectID}
+	filter := bson.M{"_id": objectId}
 
-	// Find a single document that matches the filter
 	var task model.Task
 	err = collection.FindOne(ctx, filter).Decode(&task)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, errors.New("task Not Found")
+			return nil, errors.New("task not found")
 		}
 		return nil, err
 	}
@@ -174,16 +174,22 @@ func DeleteTask(ID string) (*model.Task, error) {
 func AddTask(task model.Task) (*model.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
 	if strings.ToLower(task.Status) != "in progress" && strings.ToLower(task.Status) != "completed" && strings.ToLower(task.Status) != "pending" {
 		return nil, errors.New("status error")
 	}
 
-	task.ID = primitive.NewObjectID()
+	for {
+		task.ID = primitive.NewObjectID()
 
-	_, err := collection.InsertOne(ctx, task)
-	if err != nil {
-		log.Fatal(err)
+		_, err := collection.InsertOne(ctx, task)
+
+		if mongo.IsDuplicateKeyError(err) {
+			continue
+		} else if err != nil {
+			return nil, err
+		}
+
+		return &task, nil
 	}
-
-	return &task, nil
 }
