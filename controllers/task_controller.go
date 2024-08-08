@@ -5,16 +5,26 @@ import (
 	"net/http"
 
 	"github.com/Task-Management-go/data"
+	err "github.com/Task-Management-go/errors"
 	model "github.com/Task-Management-go/models"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
 
 func GetTasks(c *gin.Context) {
-	tasks, err := data.GetTasks()
+	tasks, e := data.GetTasks()
 
-	if err != nil {
-		c.IndentedJSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+	if e != nil {
+		if e.(*err.Error).Type() == "ServerError" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": e.Error()})
+		} else if e.(*err.Error).Type() == "NotFound" {
+			c.JSON(http.StatusNotFound, gin.H{"error": e.Error()})
+		} else if e.(*err.Error).Type() == "Conflict" {
+			c.JSON(http.StatusConflict, gin.H{"error": e.Error()})
+		} else if e.(*err.Error).Type() == "Validation" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": e.Error()})
+		}
+		return
 	}
 
 	c.IndentedJSON(http.StatusOK, tasks)
@@ -22,10 +32,18 @@ func GetTasks(c *gin.Context) {
 
 func GetTaskById(c *gin.Context) {
 	id := c.Param("id")
-	task, err := data.GetTaskByID(id)
+	task, e := data.GetTaskByID(id)
 
-	if err != nil {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"error": err.Error()})
+	if e != nil {
+		if e.(*err.Error).Type() == "ServerError" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": e.Error()})
+		} else if e.(*err.Error).Type() == "NotFound" {
+			c.JSON(http.StatusNotFound, gin.H{"error": e.Error()})
+		} else if e.(*err.Error).Type() == "Conflict" {
+			c.JSON(http.StatusConflict, gin.H{"error": e.Error()})
+		} else if e.(*err.Error).Type() == "Validation" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": e.Error()})
+		}
 		return
 	}
 
@@ -62,20 +80,20 @@ func UpdateItem(c *gin.Context) {
 		return
 	}
 
-	task, err := data.UpdateItem(id, updatedTask)
+	task, e := data.UpdateItem(id, updatedTask)
 
-	if err != nil && err.Error() == "status error" {
-		fmt.Println(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Status can only be Pending or In Progress or Completed"})
-		return
-	}
-
-	if err != nil && err.Error() == "task Not Found" {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "Task Not Found"})
-		return
-	}
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if e != nil {
+		if e.Error() == "status error" {
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Status can only be Pending or In Progress or Completed"})
+		} else if e.(*err.Error).Type() == "ServerError" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": e.Error()})
+		} else if e.(*err.Error).Type() == "NotFound" {
+			c.JSON(http.StatusNotFound, gin.H{"error": e.Error()})
+		} else if e.(*err.Error).Type() == "Conflict" {
+			c.JSON(http.StatusConflict, gin.H{"error": e.Error()})
+		} else if e.(*err.Error).Type() == "Validation" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": e.Error()})
+		}
 		return
 	}
 
@@ -84,10 +102,18 @@ func UpdateItem(c *gin.Context) {
 
 func DeleteTask(c *gin.Context) {
 	id := c.Param("id")
-	task, err := data.DeleteTask(id)
+	task, e := data.DeleteTask(id)
 
-	if err != nil {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"error": err.Error()})
+	if e != nil {
+		if e.(*err.Error).Type() == "ServerError" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": e.Error()})
+		} else if e.(*err.Error).Type() == "NotFound" {
+			c.JSON(http.StatusNotFound, gin.H{"error": e.Error()})
+		} else if e.(*err.Error).Type() == "Conflict" {
+			c.JSON(http.StatusConflict, gin.H{"error": e.Error()})
+		} else if e.(*err.Error).Type() == "Validation" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": e.Error()})
+		}
 		return
 	}
 
@@ -131,14 +157,22 @@ func AddTask(c *gin.Context) {
 		return
 	}
 
-	task, err := data.AddTask(newTask)
+	task, e := data.AddTask(newTask)
 
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Status can only be Pending or In Progress or Completed"})
+	if e != nil {
+		if e.Error() == "status error" {
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Status can only be Pending or In Progress or Completed"})
+		} else if e.(*err.Error).Type() == "ServerError" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": e.Error()})
+		} else if e.(*err.Error).Type() == "NotFound" {
+			c.JSON(http.StatusNotFound, gin.H{"error": e.Error()})
+		} else if e.(*err.Error).Type() == "Conflict" {
+			c.JSON(http.StatusConflict, gin.H{"error": e.Error()})
+		} else if e.(*err.Error).Type() == "Validation" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": e.Error()})
+		}
 		return
 	}
 
 	c.IndentedJSON(http.StatusCreated, task)
 }
-
-

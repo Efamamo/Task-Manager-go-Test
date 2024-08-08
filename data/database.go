@@ -34,15 +34,52 @@ func init() {
 	taskCollection = client.Database("task-management").Collection("tasks")
 	userCollection = client.Database("task-management").Collection("users")
 
+	if err := ensureIndex(client, "task-management", "users", "username"); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func ensureIndex(client *mongo.Client, databaseName, collectionName, fieldName string) error {
+	userCollection := client.Database(databaseName).Collection(collectionName)
+
+	// List the existing indexes
+	cursor, err := userCollection.Indexes().List(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer cursor.Close(context.TODO())
+
+	// Check if the index already exists
+	indexExists := false
+	for cursor.Next(context.TODO()) {
+		var index bson.M
+		if err := cursor.Decode(&index); err != nil {
+			return err
+		}
+		if key, ok := index["key"].(bson.M); ok {
+			if _, exists := key[fieldName]; exists {
+				indexExists = true
+				break
+			}
+		}
+	}
+
+	if indexExists {
+		fmt.Println("Index on", fieldName, "already exists.")
+		return nil
+	}
+
+	// Create the index if it does not exist
 	indexModel := mongo.IndexModel{
-		Keys:    bson.M{"username": 1}, // Index on email field
+		Keys:    bson.M{fieldName: 1}, // Index on the specified field
 		Options: options.Index().SetUnique(true),
 	}
 
-	// Create the index
 	indexName, err := userCollection.Indexes().CreateOne(context.TODO(), indexModel)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+
 	fmt.Println("Created index:", indexName)
+	return nil
 }

@@ -13,7 +13,7 @@ func SetUpRouter() {
 	r.PUT("/tasks/:id", middleware.AuthMiddleware(true), controller.UpdateItem)
 	r.DELETE("/tasks/:id", middleware.AuthMiddleware(true), controller.DeleteTask)
 	r.POST("/tasks", middleware.AuthMiddleware(true), controller.AddTask)
-	r.POST("/signup", controller.SignUp)
+	r.POST("/register", controller.SignUp)
 	r.POST("/login", controller.Login)
 	r.PATCH("/promote", middleware.AuthMiddleware(true), controller.Promote)
 	r.Run("localhost:3000")

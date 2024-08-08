@@ -2,10 +2,9 @@ package data
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"time"
 
+	err "github.com/Task-Management-go/errors"
 	model "github.com/Task-Management-go/models"
 	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson"
@@ -31,30 +30,30 @@ func countUsers() (int64, error) {
 func SignUp(user model.User) (*model.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	count, err := countUsers()
+	count, e := countUsers()
 
-	if err != nil {
-		return nil, err
+	if e != nil {
+		return nil, err.NewUnexpected(e.Error())
 	}
 
 	if count == 0 {
 		user.IsAdmin = true
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	hashedPassword, e := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 
-	if err != nil {
-		return nil, err
+	if e != nil {
+		return nil, err.NewValidation("Password Cant Be Hashed")
 	}
 
 	user.Password = string(hashedPassword)
 
 	user.ID = primitive.NewObjectID()
 
-	_, err = userCollection.InsertOne(ctx, user)
+	_, e = userCollection.InsertOne(ctx, user)
 
-	if err != nil {
-		return nil, errors.New("user with then given username already exists")
+	if e != nil {
+		return nil, err.NewConflict("user with then given username already exists")
 	}
 
 	return &user, nil
@@ -68,27 +67,27 @@ func getUserByUsername(username string) (*model.User, error) {
 	filter := bson.M{"username": username}
 
 	var user model.User
-	err := userCollection.FindOne(ctx, filter).Decode(&user)
+	e := userCollection.FindOne(ctx, filter).Decode(&user)
 
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, errors.New("user not found")
+	if e != nil {
+		if e == mongo.ErrNoDocuments {
+			return nil, err.NewNotFound("User Not Found")
 		}
-		return nil, err
+		return nil, err.NewUnexpected(e.Error())
 	}
 
 	return &user, nil
 }
 
 func Login(user model.User) (string, error) {
-	existingUser, err := getUserByUsername(user.Username)
+	existingUser, e := getUserByUsername(user.Username)
 
-	if err != nil {
-		return "", err
+	if e != nil {
+		return "", err.NewNotFound("User Not Found")
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(user.Password)) != nil {
-		return "", errors.New("invalid password")
+		return "", err.NewUnauthorized("Invalid Credentials")
 	}
 
 	expirationTime := time.Now().Add(1 * time.Hour).Unix()
@@ -99,11 +98,11 @@ func Login(user model.User) (string, error) {
 		"exp":      expirationTime,
 	})
 
-	jwtToken, err := token.SignedString(JwtSecret)
+	jwtToken, e := token.SignedString(JwtSecret)
 
-	if err != nil {
-		fmt.Println(err)
-		return "", errors.New("server error")
+	if e != nil {
+
+		return "", err.NewUnexpected(e.Error())
 	}
 	return jwtToken, nil
 }
@@ -111,24 +110,23 @@ func Login(user model.User) (string, error) {
 func Promote(username string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	existingUser, err := getUserByUsername(username)
-	fmt.Println(existingUser)
+	existingUser, e := getUserByUsername(username)
 
-	if err != nil {
-		return false, err
+	if e != nil {
+		return false, err.NewNotFound("User Not Found")
 	}
 
-	if existingUser.IsAdmin == true {
-		return false, errors.New("the user is already an admin")
+	if existingUser.IsAdmin {
+		return false, err.NewConflict("User is already an Admin")
 	}
 
 	filter := bson.M{"username": existingUser.Username}
 	filter2 := bson.M{"$set": bson.M{"isAdmin": true}}
 
-	_, err = userCollection.UpdateOne(ctx, filter, filter2)
+	_, e = userCollection.UpdateOne(ctx, filter, filter2)
 
-	if err != nil {
-		return false, err
+	if e != nil {
+		return false, err.NewUnexpected(e.Error())
 	}
 
 	return true, nil

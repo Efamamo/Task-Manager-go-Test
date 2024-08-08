@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	err "github.com/Task-Management-go/errors"
 	model "github.com/Task-Management-go/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -46,29 +47,26 @@ func GetTasks() (*[]model.Task, error) {
 }
 
 func GetTaskByID(id string) (*model.Task, error) {
-
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	objectId, err := primitive.ObjectIDFromHex(id)
-
-	if err != nil {
-		return nil, err
+	objectId, e := primitive.ObjectIDFromHex(id)
+	if e != nil {
+		return nil, err.NewValidation("invalid ID format")
 	}
 
 	filter := bson.M{"_id": objectId}
 
 	var task model.Task
-	err = taskCollection.FindOne(ctx, filter).Decode(&task)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, errors.New("task not found")
+	e = taskCollection.FindOne(ctx, filter).Decode(&task)
+	if e != nil {
+		if e == mongo.ErrNoDocuments {
+			return nil, err.NewNotFound("task not found")
 		}
-		return nil, err
+		return nil, err.NewUnexpected(e.Error())
 	}
 
 	return &task, nil
-
 }
 
 func UpdateItem(ID string, updatedTask model.Task) (*model.Task, error) {

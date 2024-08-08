@@ -42,7 +42,7 @@ func AuthMiddleware(role bool) gin.HandlerFunc {
 		if role {
 			claims, ok := token.Claims.(jwt.MapClaims)
 			if !ok || !token.Valid {
-				c.JSON(401, gin.H{"error": "unauthorized"})
+				c.JSON(403, gin.H{"error": "forbidden"})
 				c.Abort()
 				return
 			}
