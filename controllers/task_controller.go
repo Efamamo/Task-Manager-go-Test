@@ -16,11 +16,6 @@ func GetTasks(c *gin.Context) {
 	if err != nil {
 		c.IndentedJSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 	}
-	fmt.Println(tasks)
-	if len(*tasks) == 0 {
-		c.IndentedJSON(http.StatusOK, gin.H{})
-		return
-	}
 
 	c.IndentedJSON(http.StatusOK, tasks)
 }

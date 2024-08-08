@@ -47,30 +47,31 @@ func GetTasks() (*[]model.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	cursor, err := collection.Find(ctx, bson.M{})
+	cur, err := collection.Find(ctx, bson.D{})
 	if err != nil {
-
 		return nil, err
 	}
 
-	defer cursor.Close(ctx)
-
-	var tasks []model.Task
-	for cursor.Next(ctx) {
+	tasks := make([]model.Task, 0)
+	for cur.Next(ctx) {
 		var task model.Task
-		if err := cursor.Decode(&task); err != nil {
 
+		err := cur.Decode(&task)
+
+		if err != nil {
 			return nil, err
 		}
 		tasks = append(tasks, task)
 	}
 
-	if err := cursor.Err(); err != nil {
-
+	if cur.Err() != nil {
 		return nil, err
 	}
 
+	cur.Close(ctx)
+
 	return &tasks, nil
+
 }
 
 func GetTaskByID(id string) (*model.Task, error) {
@@ -107,11 +108,10 @@ func UpdateItem(ID string, updatedTask model.Task) (*model.Task, error) {
 		return nil, err
 	}
 
-	task, err := GetTaskByID(ID)
+	_, err = GetTaskByID(ID)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(task)
 
 	if strings.ToLower(updatedTask.Status) != "in progress" && strings.ToLower(updatedTask.Status) != "completed" && strings.ToLower(updatedTask.Status) != "pending" {
 		return nil, errors.New("status error")
