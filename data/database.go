@@ -34,7 +34,6 @@ func init() {
 	taskCollection = client.Database("task-management").Collection("tasks")
 	userCollection = client.Database("task-management").Collection("users")
 
-	
 	indexModel := mongo.IndexModel{
 		Keys:    bson.M{"username": 1}, // Index on email field
 		Options: options.Index().SetUnique(true),
