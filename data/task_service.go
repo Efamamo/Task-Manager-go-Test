@@ -3,8 +3,6 @@ package data
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -13,41 +11,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
-
-var client *mongo.Client
-var collection *mongo.Collection
-
-// Initialize MongoDB connection once
-func init() {
-
-	clientOptions := options.Client().ApplyURI("your-mongodb-connection-string")
-
-	// Connect to MongoDB
-	var err error
-	client, err = mongo.Connect(context.TODO(), clientOptions)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Check the connection
-	err = client.Ping(context.TODO(), nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	collection = client.Database("task-management").Collection("tasks")
-	fmt.Println("Connected to MongoDB!")
-
-}
 
 func GetTasks() (*[]model.Task, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	cur, err := collection.Find(ctx, bson.D{})
+	cur, err := taskCollection.Find(ctx, bson.D{})
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +59,7 @@ func GetTaskByID(id string) (*model.Task, error) {
 	filter := bson.M{"_id": objectId}
 
 	var task model.Task
-	err = collection.FindOne(ctx, filter).Decode(&task)
+	err = taskCollection.FindOne(ctx, filter).Decode(&task)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, errors.New("task not found")
@@ -128,7 +99,7 @@ func UpdateItem(ID string, updatedTask model.Task) (*model.Task, error) {
 	}
 
 	// Update the document that matches the filter
-	_, err = collection.UpdateOne(ctx, filter, update)
+	_, err = taskCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +132,7 @@ func DeleteTask(ID string) (*model.Task, error) {
 	filter := bson.M{"_id": id}
 
 	// Delete the document that matches the filter
-	_, err = collection.DeleteOne(ctx, filter)
+	_, err = taskCollection.DeleteOne(ctx, filter)
 
 	if err != nil {
 		return nil, err
@@ -182,7 +153,7 @@ func AddTask(task model.Task) (*model.Task, error) {
 	for {
 		task.ID = primitive.NewObjectID()
 
-		_, err := collection.InsertOne(ctx, task)
+		_, err := taskCollection.InsertOne(ctx, task)
 
 		if mongo.IsDuplicateKeyError(err) {
 			continue
