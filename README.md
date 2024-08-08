@@ -5,12 +5,12 @@
 1. Clone the repository:
    
    ```sh
-   git clone https://github.com/Efamamo/Task-Management-mongoDB ```
+   git clone https://github.com/Efamamo/Task-Management-mongoDB
    
 2. Change to the project directory:
 
-  ```sh
-  cd /Task-Management-go```
+  ```
+  cd /Task-Management-go
 
 ## Configuration
 
