@@ -39,7 +39,7 @@ func SignUp(c *gin.Context) {
 
 	u, err := data.SignUp(newUser)
 	if err != nil {
-		c.IndentedJSON(500, gin.H{"error": err})
+		c.IndentedJSON(500, gin.H{"error": err.Error()})
 		return
 	}
 	c.IndentedJSON(201, u)
@@ -79,5 +79,21 @@ func Login(c *gin.Context) {
 		return
 	}
 	c.IndentedJSON(201, u)
+
+}
+
+func Promote(c *gin.Context) {
+	username := c.Query("username")
+
+	promoted, err := data.Promote(username)
+
+	if err != nil {
+		c.IndentedJSON(404, gin.H{"error": err.Error()})
+		return
+	}
+
+	if promoted {
+		c.IndentedJSON(203, gin.H{"message": "User promoted"})
+	}
 
 }
