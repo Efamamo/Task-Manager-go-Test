@@ -1,3 +1,17 @@
+## Task Management Using MondoDB
+
+Task MAnagement API is used for Creating, Reading, Updating and Deleting your Daily, Weekly or Monthely or Yearly Tasks which makes Your Life Easy by Managing Tasks.
+
+## Configuration
+
+Before running the application, ensure you have a MongoDB instance running. Update the database connection string in `data.go` where it is set with:
+
+```go
+clientOptions := options.Client().ApplyURI("your-mongodb-connection-string")
+```
+
+Replace `"your-mongodb-connection-string"` with your actual MongoDB connection string.
+
 ## GET - GetAllTasks
 
 localhost:3000/tasks
@@ -97,9 +111,9 @@ Upon successful execution, the endpoint returns a status code of 201 and a JSON 
 #### Example Response
 ```json
 {
-"id": "1",
-"title": "dfcgvh",
-"description": "cdfvgbh",
+"id": "66b47d33320e17e93d99daab",
+"title": "Do Authentication",
+"description": "Do Authentication and Authorization by the morning",
 "due_date": "2024-08-07T09:41:00.564238382+03:00",
 "status": "Pending"
 }
@@ -124,7 +138,7 @@ This endpoint is used to delete a specific task identified by its ID.
 #### Example Response
 ```json
 {
-"id": "2",
+"_id": "66b47d33320e17e93d99da22",
 "title": "Task 2",
 "description": "Second task",
 "due_date": "2024-08-08T09:41:00.564241718+03:00",
@@ -172,7 +186,7 @@ The response is in JSON format with the following schema:
 #### Example Response
 ```json
 {
-"id": "4",
+"id": "66b47d33320e17e93d99da22",
 "title": "Task 4",
 "description": "Fourth task",
 "due_date": "2024-08-08T09:41:00.564241718+03:00",
