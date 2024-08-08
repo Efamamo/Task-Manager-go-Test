@@ -21,7 +21,7 @@ var collection *mongo.Collection
 
 // Initialize MongoDB connection once
 func init() {
-	clientOptions := options.Client().ApplyURI("mongodb+srv://nest:efamamo@cluster0.avreuwg.mongodb.net/")
+	clientOptions := options.Client().ApplyURI("mongodb+srv://<username>:<password>@cluster0.avreuwg.mongodb.net/")
 
 	// Connect to MongoDB
 	var err error
