@@ -1,10 +1,10 @@
-## Task Management Using MondoDB
+# Task Management Using MondoDB
 
 Task Management API is used for Creating, Reading, Updating and Deleting your Daily, Weekly or Monthely or Yearly Tasks which makes Your Life Easy by Managing Tasks.
 
 ## Configuration
 
-Before running the application, ensure you have a MongoDB instance running. Update the database connection string in `data.go` where it is set with:
+Before running the application, ensure you have a MongoDB instance running. Update the database connection string in `data/database.go` where it is set with:
 
 ```go
 clientOptions := options.Client().ApplyURI("your-mongodb-connection-string")
@@ -79,7 +79,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjMxODgxOTUsImlzQWRtaW4iOnRydWU
 
 ## PATCH - PromoteUser
 
-localhost:3000/patch
+localhost:3000/promote
 
 This endpoint makes an HTTP PATCH request to localhost:3000/promote to promote a user from regular user to admin. This end point is protected so regular users cant access it. The request does not include a request body. The response will have a status code of 203 if the action is successful. The response body will be an object telling if the action is successful or not. Here's an example of the response body:
 
