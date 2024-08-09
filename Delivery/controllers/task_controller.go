@@ -12,9 +12,13 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func GetTasks(c *gin.Context) {
+type TaskController struct {
+	Service usecases.TaskService
+}
 
-	tasks, e := usecases.GetTasks()
+func (tc TaskController) GetTasks(c *gin.Context) {
+
+	tasks, e := tc.Service.GetTasks()
 
 	if e != nil {
 		if e.(*err.Error).Type() == "ServerError" {
@@ -32,9 +36,9 @@ func GetTasks(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, tasks)
 }
 
-func GetTaskById(c *gin.Context) {
+func (tc TaskController) GetTaskById(c *gin.Context) {
 	id := c.Param("id")
-	task, e := usecases.GetTaskByID(id)
+	task, e := tc.Service.GetTaskByID(id)
 
 	if e != nil {
 		if e.(*err.Error).Type() == "ServerError" {
@@ -52,7 +56,7 @@ func GetTaskById(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, *task)
 }
 
-func UpdateItem(c *gin.Context) {
+func (tc TaskController) UpdateItem(c *gin.Context) {
 	id := c.Param("id")
 	var updatedTask domain.Task
 	if err := c.ShouldBindJSON(&updatedTask); err != nil {
@@ -82,7 +86,7 @@ func UpdateItem(c *gin.Context) {
 		return
 	}
 
-	task, e := usecases.UpdateItem(id, updatedTask)
+	task, e := tc.Service.UpdateItem(id, updatedTask)
 
 	if e != nil {
 		if e.Error() == "status error" {
@@ -102,9 +106,9 @@ func UpdateItem(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, *task)
 }
 
-func DeleteTask(c *gin.Context) {
+func (tc TaskController) DeleteTask(c *gin.Context) {
 	id := c.Param("id")
-	task, e := usecases.DeleteTask(id)
+	task, e := tc.Service.DeleteTask(id)
 
 	if e != nil {
 		if e.(*err.Error).Type() == "ServerError" {
@@ -122,7 +126,7 @@ func DeleteTask(c *gin.Context) {
 	c.IndentedJSON(http.StatusAccepted, *task)
 }
 
-func AddTask(c *gin.Context) {
+func (tc TaskController) AddTask(c *gin.Context) {
 	var newTask domain.Task
 
 	if err := c.ShouldBindJSON(&newTask); err != nil {
@@ -159,7 +163,7 @@ func AddTask(c *gin.Context) {
 		return
 	}
 
-	task, e := usecases.AddTask(newTask)
+	task, e := tc.Service.AddTask(newTask)
 
 	if e != nil {
 		if e.Error() == "status error" {

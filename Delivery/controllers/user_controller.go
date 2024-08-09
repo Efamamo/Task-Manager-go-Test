@@ -11,7 +11,11 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func SignUp(c *gin.Context) {
+type UserController struct {
+	Service usecases.UserService
+}
+
+func (uc *UserController) SignUp(c *gin.Context) {
 
 	var newUser domain.User
 	if err := c.ShouldBindJSON(&newUser); err != nil {
@@ -39,7 +43,7 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
-	u, e := usecases.SignUp(newUser)
+	u, e := uc.Service.SignUp(newUser)
 	if e != nil {
 		if e.(*err.Error).Type() == "ServerError" {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": e.Error()})
@@ -57,7 +61,7 @@ func SignUp(c *gin.Context) {
 
 }
 
-func Login(c *gin.Context) {
+func (uc *UserController) Login(c *gin.Context) {
 	var reqUser domain.User
 	if err := c.ShouldBindJSON(&reqUser); err != nil {
 
@@ -84,7 +88,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	u, e := usecases.Login(reqUser)
+	u, e := uc.Service.Login(reqUser)
 	if e != nil {
 		if e.(*err.Error).Type() == "ServerError" {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": e.Error()})
@@ -106,10 +110,10 @@ func Login(c *gin.Context) {
 
 }
 
-func Promote(c *gin.Context) {
+func (uc *UserController) Promote(c *gin.Context) {
 	username := c.Query("username")
 
-	promoted, e := usecases.Promote(username)
+	promoted, e := uc.Service.Promote(username)
 
 	if e != nil {
 		if e.(*err.Error).Type() == "ServerError" {
