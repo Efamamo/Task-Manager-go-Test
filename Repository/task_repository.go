@@ -1,4 +1,4 @@
-package data
+package repository
 
 import (
 	"context"
@@ -6,16 +6,16 @@ import (
 	"strings"
 	"time"
 
+	domain "github.com/Task-Management-go/Domain"
 	err "github.com/Task-Management-go/errors"
-	model "github.com/Task-Management-go/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func GetTasks() (*[]model.Task, error) {
+type TaskRepository struct{}
 
+func (tr *TaskRepository) FindAll() (*[]domain.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -24,9 +24,9 @@ func GetTasks() (*[]model.Task, error) {
 		return nil, err
 	}
 
-	tasks := make([]model.Task, 0)
+	tasks := make([]domain.Task, 0)
 	for cur.Next(ctx) {
-		var task model.Task
+		var task domain.Task
 
 		err := cur.Decode(&task)
 
@@ -46,7 +46,7 @@ func GetTasks() (*[]model.Task, error) {
 
 }
 
-func GetTaskByID(id string) (*model.Task, error) {
+func (tr *TaskRepository) FindOne(id string) (*domain.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -57,7 +57,7 @@ func GetTaskByID(id string) (*model.Task, error) {
 
 	filter := bson.M{"_id": objectId}
 
-	var task model.Task
+	var task domain.Task
 	e = taskCollection.FindOne(ctx, filter).Decode(&task)
 	if e != nil {
 		if e == mongo.ErrNoDocuments {
@@ -69,15 +69,16 @@ func GetTaskByID(id string) (*model.Task, error) {
 	return &task, nil
 }
 
-func UpdateItem(ID string, updatedTask model.Task) (*model.Task, error) {
+func (tr *TaskRepository) UpdateOne(id string, updatedTask domain.Task) (*domain.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	id, err := primitive.ObjectIDFromHex(ID)
-	if err != nil {
-		return nil, err
+
+	_, e := tr.FindOne(id)
+	if e != nil {
+		return nil, e
 	}
 
-	_, err = GetTaskByID(ID)
+	ID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +86,7 @@ func UpdateItem(ID string, updatedTask model.Task) (*model.Task, error) {
 	if strings.ToLower(updatedTask.Status) != "in progress" && strings.ToLower(updatedTask.Status) != "completed" && strings.ToLower(updatedTask.Status) != "pending" {
 		return nil, errors.New("status error")
 	}
-	filter := bson.M{"_id": id}
+	filter := bson.M{"_id": ID}
 
 	update := bson.M{
 		"$set": bson.M{
@@ -102,7 +103,7 @@ func UpdateItem(ID string, updatedTask model.Task) (*model.Task, error) {
 		return nil, err
 	}
 
-	utask, err := GetTaskByID(ID)
+	utask, err := tr.FindOne(id)
 
 	if err != nil {
 		return nil, err
@@ -112,7 +113,7 @@ func UpdateItem(ID string, updatedTask model.Task) (*model.Task, error) {
 
 }
 
-func DeleteTask(ID string) (*model.Task, error) {
+func (tr *TaskRepository) DeleteOne(ID string) (*domain.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	id, err := primitive.ObjectIDFromHex(ID)
@@ -121,7 +122,7 @@ func DeleteTask(ID string) (*model.Task, error) {
 		return nil, err
 	}
 
-	task, err := GetTaskByID(ID)
+	task, err := tr.FindOne(ID)
 
 	if err != nil {
 		return nil, err
@@ -137,16 +138,13 @@ func DeleteTask(ID string) (*model.Task, error) {
 	}
 
 	return task, nil
-
 }
 
-func AddTask(task model.Task) (*model.Task, error) {
+func (tr *TaskRepository) Save(task domain.Task) (*domain.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	if strings.ToLower(task.Status) != "in progress" && strings.ToLower(task.Status) != "completed" && strings.ToLower(task.Status) != "pending" {
-		return nil, errors.New("status error")
-	}
+	
 
 	for {
 		task.ID = primitive.NewObjectID()

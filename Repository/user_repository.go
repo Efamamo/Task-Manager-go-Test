@@ -1,21 +1,21 @@
-package data
+package repository
 
 import (
 	"context"
 	"time"
 
+	domain "github.com/Task-Management-go/Domain"
+	infrastructure "github.com/Task-Management-go/Infrastructure"
 	err "github.com/Task-Management-go/errors"
-	model "github.com/Task-Management-go/models"
-	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var JwtSecret = []byte("mini123")
+type UserRepository struct{}
 
-func countUsers() (int64, error) {
+func (ur *UserRepository) Count() (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -27,46 +27,13 @@ func countUsers() (int64, error) {
 	return count, nil
 }
 
-func SignUp(user model.User) (*model.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	count, e := countUsers()
-
-	if e != nil {
-		return nil, err.NewUnexpected(e.Error())
-	}
-
-	if count == 0 {
-		user.IsAdmin = true
-	}
-
-	hashedPassword, e := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-
-	if e != nil {
-		return nil, err.NewValidation("Password Cant Be Hashed")
-	}
-
-	user.Password = string(hashedPassword)
-
-	user.ID = primitive.NewObjectID()
-
-	_, e = userCollection.InsertOne(ctx, user)
-
-	if e != nil {
-		return nil, err.NewConflict("user with then given username already exists")
-	}
-
-	return &user, nil
-
-}
-
-func getUserByUsername(username string) (*model.User, error) {
+func (ur *UserRepository) GetUserByUsername(username string) (*domain.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	filter := bson.M{"username": username}
 
-	var user model.User
+	var user domain.User
 	e := userCollection.FindOne(ctx, filter).Decode(&user)
 
 	if e != nil {
@@ -79,38 +46,49 @@ func getUserByUsername(username string) (*model.User, error) {
 	return &user, nil
 }
 
-func Login(user model.User) (string, error) {
+func (ur *UserRepository) SignUp(user domain.User) (*domain.User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	existingUser, e := getUserByUsername(user.Username)
+	hashedPassword, e := infrastructure.HasPassword(user.Password)
+	if e != nil {
+		return nil, err.NewValidation("Password Cant Be Hashed")
+	}
+	user.Password = string(hashedPassword)
+	user.ID = primitive.NewObjectID()
+	_, e = userCollection.InsertOne(ctx, user)
 
-	if e != nil{
+	if e != nil {
+		return nil, err.NewConflict("user with then given username already exists")
+	}
+
+	return &user, nil
+}
+
+func (ur *UserRepository) Login(user domain.User) (string, error) {
+	existingUser, e := ur.GetUserByUsername(user.Username)
+
+	if e != nil {
 		return "", e
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(user.Password)) != nil{
+	if bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(user.Password)) != nil {
 		return "", err.NewUnauthorized("Invalid Credentials")
 	}
-	
-	expirationTime := time.Now().Add(20 * time.Minute).Unix()
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": existingUser.Username,
-		"isAdmin":  existingUser.IsAdmin,
-		"exp":      expirationTime,
-	})
+	jwtToken, err := infrastructure.GenerateToken(existingUser.Username, existingUser.IsAdmin)
 
-	jwtToken, e := token.SignedString(JwtSecret)
-
-	if e != nil {
-		return "", err.NewValidation(e.Error())
+	if err != nil {
+		return "", e
 	}
+
 	return jwtToken, nil
 }
 
-func Promote(username string) (bool, error) {
+func (ur *UserRepository) PromoteUser(username string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	existingUser, e := getUserByUsername(username)
+	existingUser, e := ur.GetUserByUsername(username)
 
 	if e != nil {
 		return false, err.NewNotFound("User Not Found")

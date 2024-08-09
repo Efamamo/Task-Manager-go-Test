@@ -1,4 +1,4 @@
-package data
+package repository
 
 import (
 	"context"
@@ -17,7 +17,7 @@ var userCollection *mongo.Collection
 // Initialize MongoDB connection once
 func init() {
 
-	clientOptions := options.Client().ApplyURI("your-mongodb-connection-string")
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
 
 	// Connect to MongoDB
 	var err error

@@ -1,4 +1,4 @@
-package model
+package domain
 
 import (
 	"time"
@@ -12,4 +12,11 @@ type Task struct {
 	Description string             `bson:"description" binding:"required" json:"description"`
 	DueDate     time.Time          `bson:"due_date" binding:"required" json:"due_date"`
 	Status      string             `bson:"status" binding:"required" json:"status"`
+}
+
+type User struct {
+	ID       primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
+	Username string             `bson:"username" binding:"required" json:"username"`
+	Password string             `bson:"password" binding:"required" json:"password"`
+	IsAdmin  bool               `bson:"isAdmin" json:"isAdmin"`
 }
