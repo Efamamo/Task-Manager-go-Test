@@ -10,7 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type UserRepository struct{}
@@ -72,10 +71,10 @@ func (ur *UserRepository) Login(user domain.User) (string, error) {
 		return "", e
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(user.Password)) != nil {
-		return "", err.NewUnauthorized("Invalid Credentials")
+	_, e = infrastructure.ComparePassword(existingUser.Password, user.Password)
+	if e != nil {
+		return "", e
 	}
-
 	jwtToken, err := infrastructure.GenerateToken(existingUser.Username, existingUser.IsAdmin)
 
 	if err != nil {
