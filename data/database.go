@@ -17,7 +17,7 @@ var userCollection *mongo.Collection
 // Initialize MongoDB connection once
 func init() {
 
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:2717")
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
 
 	// Connect to MongoDB
 	var err error

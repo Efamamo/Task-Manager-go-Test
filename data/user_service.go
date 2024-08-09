@@ -80,29 +80,29 @@ func getUserByUsername(username string) (*model.User, error) {
 }
 
 func Login(user model.User) (string, error) {
+
 	existingUser, e := getUserByUsername(user.Username)
 
-	if e != nil {
-		return "", err.NewNotFound("User Not Found")
+	if e != nil{
+		return "", e
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(user.Password)) != nil {
+	if bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(user.Password)) != nil{
 		return "", err.NewUnauthorized("Invalid Credentials")
 	}
-
-	expirationTime := time.Now().Add(1 * time.Hour).Unix()
+	
+	expirationTime := time.Now().Add(20 * time.Minute).Unix()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": existingUser.Username,
-		"role":     existingUser.IsAdmin,
+		"isAdmin":  existingUser.IsAdmin,
 		"exp":      expirationTime,
 	})
 
 	jwtToken, e := token.SignedString(JwtSecret)
 
 	if e != nil {
-
-		return "", err.NewUnexpected(e.Error())
+		return "", err.NewValidation(e.Error())
 	}
 	return jwtToken, nil
 }

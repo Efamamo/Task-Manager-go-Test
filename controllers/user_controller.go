@@ -24,10 +24,10 @@ func SignUp(c *gin.Context) {
 		for _, e := range validationErrors {
 
 			field := e.Field()
-			fmt.Println(field, "this is field")
+
 			switch field {
 			case "Username":
-				errorMessages["username"] = "username is required."
+				errorMessages["username"] = "Username is required."
 			case "Password":
 				errorMessages["password"] = "Password is required."
 

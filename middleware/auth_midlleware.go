@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AuthMiddleware(role bool) gin.HandlerFunc {
+func AuthMiddleware(isAdmin bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -39,7 +39,7 @@ func AuthMiddleware(role bool) gin.HandlerFunc {
 			return
 		}
 
-		if role {
+		if isAdmin {
 			claims, ok := token.Claims.(jwt.MapClaims)
 			if !ok || !token.Valid {
 				c.JSON(403, gin.H{"error": "forbidden"})
@@ -47,7 +47,7 @@ func AuthMiddleware(role bool) gin.HandlerFunc {
 				return
 			}
 
-			role, ok := claims["role"].(bool)
+			role, ok := claims["isAdmin"].(bool)
 			if !ok || !role {
 				c.JSON(403, gin.H{"error": "forbidden"})
 				c.Abort()

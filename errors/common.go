@@ -25,7 +25,7 @@ func new(errType string, message string) *Error {
 
 // Error returns the string representation of the Error.
 func (e *Error) Error() string {
-	return fmt.Sprintf("%s: %s", e.kind, e.Message)
+	return fmt.Sprintf(e.Message)
 }
 
 // Type returns the string of the Error.
