@@ -2,16 +2,16 @@ package usecases
 
 import (
 	domain "github.com/Task-Management-go/Domain"
-	repository "github.com/Task-Management-go/Repository"
+	infrastructure "github.com/Task-Management-go/Infrastructure"
 	err "github.com/Task-Management-go/errors"
 )
 
+type UserService struct {
+	UserRepo UserInterface
+}
 
-
-var userRepository UserInterface = &repository.UserRepository{}
-
-func SignUp(user domain.User) (*domain.User, error) {
-	count, e := userRepository.Count()
+func (us *UserService) SignUp(user domain.User) (*domain.User, error) {
+	count, e := us.UserRepo.Count()
 	if e != nil {
 		return nil, err.NewUnexpected(e.Error())
 	}
@@ -19,7 +19,7 @@ func SignUp(user domain.User) (*domain.User, error) {
 	if count == 0 {
 		user.IsAdmin = true
 	}
-	u, e := userRepository.SignUp(user)
+	u, e := us.UserRepo.SignUp(user)
 
 	if e != nil {
 		return nil, e
@@ -29,16 +29,28 @@ func SignUp(user domain.User) (*domain.User, error) {
 
 }
 
-func Login(user domain.User) (string, error) {
-	jwtToken, err := userRepository.Login(user)
-	if err != nil {
-		return "", err
+func (us *UserService) Login(user domain.User) (string, error) {
+	existingUser, e := us.UserRepo.GetUserByUsername(user.Username)
+
+	if e != nil {
+		return "", e
 	}
+
+	_, e = infrastructure.ComparePassword(existingUser.Password, user.Password)
+	if e != nil {
+		return "", e
+	}
+	jwtToken, err := infrastructure.GenerateToken(existingUser.Username, existingUser.IsAdmin)
+
+	if err != nil {
+		return "", e
+	}
+
 	return jwtToken, nil
 }
 
-func Promote(username string) (bool, error) {
-	_, err := userRepository.PromoteUser(username)
+func (us *UserService) Promote(username string) (bool, error) {
+	_, err := us.UserRepo.PromoteUser(username)
 	if err != nil {
 		return false, err
 	}

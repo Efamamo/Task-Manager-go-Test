@@ -12,7 +12,7 @@ type TaskInterface interface {
 
 type UserInterface interface {
 	SignUp(user domain.User) (*domain.User, error)
-	Login(user domain.User) (string, error)
 	PromoteUser(username string) (bool, error)
 	Count() (int64, error)
+	GetUserByUsername(username string) (*domain.User, error)
 }

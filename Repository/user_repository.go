@@ -12,13 +12,22 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type UserRepository struct{}
+type UserRepository struct {
+	collection mongo.Collection
+}
+
+func NewUserRepo(client *mongo.Client) *UserRepository {
+	userCollection := client.Database("task-management").Collection("users")
+	return &UserRepository{
+		collection: *userCollection,
+	}
+}
 
 func (ur *UserRepository) Count() (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	count, err := userCollection.CountDocuments(ctx, bson.M{})
+	count, err := ur.collection.CountDocuments(ctx, bson.M{})
 	if err != nil {
 		return 0, err
 	}
@@ -33,7 +42,7 @@ func (ur *UserRepository) GetUserByUsername(username string) (*domain.User, erro
 	filter := bson.M{"username": username}
 
 	var user domain.User
-	e := userCollection.FindOne(ctx, filter).Decode(&user)
+	e := ur.collection.FindOne(ctx, filter).Decode(&user)
 
 	if e != nil {
 		if e == mongo.ErrNoDocuments {
@@ -55,7 +64,7 @@ func (ur *UserRepository) SignUp(user domain.User) (*domain.User, error) {
 	}
 	user.Password = string(hashedPassword)
 	user.ID = primitive.NewObjectID()
-	_, e = userCollection.InsertOne(ctx, user)
+	_, e = ur.collection.InsertOne(ctx, user)
 
 	if e != nil {
 		return nil, err.NewConflict("user with then given username already exists")
@@ -64,31 +73,11 @@ func (ur *UserRepository) SignUp(user domain.User) (*domain.User, error) {
 	return &user, nil
 }
 
-func (ur *UserRepository) Login(user domain.User) (string, error) {
-	existingUser, e := ur.GetUserByUsername(user.Username)
-
-	if e != nil {
-		return "", e
-	}
-
-	_, e = infrastructure.ComparePassword(existingUser.Password, user.Password)
-	if e != nil {
-		return "", e
-	}
-	jwtToken, err := infrastructure.GenerateToken(existingUser.Username, existingUser.IsAdmin)
-
-	if err != nil {
-		return "", e
-	}
-
-	return jwtToken, nil
-}
-
 func (ur *UserRepository) PromoteUser(username string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	existingUser, e := ur.GetUserByUsername(username)
-
+ 
 	if e != nil {
 		return false, err.NewNotFound("User Not Found")
 	}
@@ -100,7 +89,7 @@ func (ur *UserRepository) PromoteUser(username string) (bool, error) {
 	filter := bson.M{"username": existingUser.Username}
 	filter2 := bson.M{"$set": bson.M{"isAdmin": true}}
 
-	_, e = userCollection.UpdateOne(ctx, filter, filter2)
+	_, e = ur.collection.UpdateOne(ctx, filter, filter2)
 
 	if e != nil {
 		return false, err.NewUnexpected(e.Error())

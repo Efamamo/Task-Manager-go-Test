@@ -5,16 +5,15 @@ import (
 	"strings"
 
 	domain "github.com/Task-Management-go/Domain"
-	repository "github.com/Task-Management-go/Repository"
 )
 
+type TaskService struct {
+	TaskRepo TaskInterface
+}
 
+func (ts *TaskService) GetTasks() (*[]domain.Task, error) {
 
-var taskRepository TaskInterface = &repository.TaskRepository{}
-
-func GetTasks() (*[]domain.Task, error) {
-
-	tasks, err := taskRepository.FindAll()
+	tasks, err := ts.TaskRepo.FindAll()
 	if err != nil {
 		return nil, err
 	}
@@ -22,17 +21,21 @@ func GetTasks() (*[]domain.Task, error) {
 
 }
 
-func GetTaskByID(id string) (*domain.Task, error) {
-	task, err := taskRepository.FindOne(id)
+func (ts *TaskService) GetTaskByID(id string) (*domain.Task, error) {
+	task, err := ts.TaskRepo.FindOne(id)
 	if err != nil {
 		return nil, err
 	}
 	return task, nil
 }
 
-func UpdateItem(ID string, updatedTask domain.Task) (*domain.Task, error) {
+func (ts *TaskService) UpdateItem(ID string, updatedTask domain.Task) (*domain.Task, error) {
 
-	utask, err := taskRepository.UpdateOne(ID, updatedTask)
+	if strings.ToLower(updatedTask.Status) != "in progress" && strings.ToLower(updatedTask.Status) != "completed" && strings.ToLower(updatedTask.Status) != "pending" {
+		return nil, errors.New("status error")
+	}
+
+	utask, err := ts.TaskRepo.UpdateOne(ID, updatedTask)
 
 	if err != nil {
 		return nil, err
@@ -42,9 +45,9 @@ func UpdateItem(ID string, updatedTask domain.Task) (*domain.Task, error) {
 
 }
 
-func DeleteTask(ID string) (*domain.Task, error) {
+func (ts *TaskService) DeleteTask(ID string) (*domain.Task, error) {
 
-	task, err := taskRepository.DeleteOne(ID)
+	task, err := ts.TaskRepo.DeleteOne(ID)
 
 	if err != nil {
 		return nil, err
@@ -53,12 +56,12 @@ func DeleteTask(ID string) (*domain.Task, error) {
 
 }
 
-func AddTask(task domain.Task) (*domain.Task, error) {
+func (ts *TaskService) AddTask(task domain.Task) (*domain.Task, error) {
 	if strings.ToLower(task.Status) != "in progress" && strings.ToLower(task.Status) != "completed" && strings.ToLower(task.Status) != "pending" {
 		return nil, errors.New("status error")
 	}
 
-	t, err := taskRepository.Save(task)
+	t, err := ts.TaskRepo.Save(task)
 
 	if err != nil {
 		return nil, err

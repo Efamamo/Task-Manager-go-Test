@@ -2,8 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
-	"strings"
 	"time"
 
 	domain "github.com/Task-Management-go/Domain"
@@ -13,13 +11,22 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type TaskRepository struct{}
+type TaskRepository struct {
+	collection mongo.Collection
+}
+
+func NewTaskRepo(client *mongo.Client) *TaskRepository {
+	taskCollection := client.Database("task-management").Collection("tasks")
+	return &TaskRepository{
+		collection: *taskCollection,
+	}
+}
 
 func (tr *TaskRepository) FindAll() (*[]domain.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	cur, err := taskCollection.Find(ctx, bson.D{})
+	cur, err := tr.collection.Find(ctx, bson.D{})
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +65,7 @@ func (tr *TaskRepository) FindOne(id string) (*domain.Task, error) {
 	filter := bson.M{"_id": objectId}
 
 	var task domain.Task
-	e = taskCollection.FindOne(ctx, filter).Decode(&task)
+	e = tr.collection.FindOne(ctx, filter).Decode(&task)
 	if e != nil {
 		if e == mongo.ErrNoDocuments {
 			return nil, err.NewNotFound("task not found")
@@ -83,9 +90,6 @@ func (tr *TaskRepository) UpdateOne(id string, updatedTask domain.Task) (*domain
 		return nil, err
 	}
 
-	if strings.ToLower(updatedTask.Status) != "in progress" && strings.ToLower(updatedTask.Status) != "completed" && strings.ToLower(updatedTask.Status) != "pending" {
-		return nil, errors.New("status error")
-	}
 	filter := bson.M{"_id": ID}
 
 	update := bson.M{
@@ -98,7 +102,7 @@ func (tr *TaskRepository) UpdateOne(id string, updatedTask domain.Task) (*domain
 	}
 
 	// Update the document that matches the filter
-	_, err = taskCollection.UpdateOne(ctx, filter, update)
+	_, err = tr.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +127,6 @@ func (tr *TaskRepository) DeleteOne(ID string) (*domain.Task, error) {
 	}
 
 	task, err := tr.FindOne(ID)
-
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +134,7 @@ func (tr *TaskRepository) DeleteOne(ID string) (*domain.Task, error) {
 	filter := bson.M{"_id": id}
 
 	// Delete the document that matches the filter
-	_, err = taskCollection.DeleteOne(ctx, filter)
+	_, err = tr.collection.DeleteOne(ctx, filter)
 
 	if err != nil {
 		return nil, err
@@ -144,12 +147,10 @@ func (tr *TaskRepository) Save(task domain.Task) (*domain.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	
-
 	for {
 		task.ID = primitive.NewObjectID()
 
-		_, err := taskCollection.InsertOne(ctx, task)
+		_, err := tr.collection.InsertOne(ctx, task)
 
 		if mongo.IsDuplicateKeyError(err) {
 			continue
