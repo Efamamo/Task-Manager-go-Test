@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -25,7 +26,7 @@ func ValidateToken(authHeader string) (*jwt.Token, error) {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 
-		return []byte("JwtSecret"), nil
+		return []byte(os.Getenv("JwtSecret")), nil
 	})
 
 	if e != nil || !token.Valid {
@@ -56,7 +57,8 @@ func GenerateToken(username string, isAdmin bool) (string, error) {
 		"isAdmin":  isAdmin,
 		"exp":      expirationTime,
 	})
-	jwtToken, e := token.SignedString([]byte("JwtSecret"))
+	fmt.Println(os.Getenv("JwtSecret"))
+	jwtToken, e := token.SignedString([]byte(os.Getenv("JwtSecret")))
 
 	if e != nil {
 		return "", err.NewValidation("Cant Sign Token")
