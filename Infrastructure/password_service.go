@@ -1,7 +1,7 @@
 package infrastructure
 
 import (
-	err "github.com/Task-Management-go/errors"
+	"github.com/Task-Management-go/Domain/err"
 	"golang.org/x/crypto/bcrypt"
 )
 

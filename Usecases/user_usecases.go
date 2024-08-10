@@ -2,8 +2,8 @@ package usecases
 
 import (
 	domain "github.com/Task-Management-go/Domain"
+	"github.com/Task-Management-go/Domain/err"
 	infrastructure "github.com/Task-Management-go/Infrastructure"
-	err "github.com/Task-Management-go/errors"
 )
 
 type UserService struct {

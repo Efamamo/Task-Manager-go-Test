@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	err "github.com/Task-Management-go/errors"
+	"github.com/Task-Management-go/Domain/err"
 	"github.com/dgrijalva/jwt-go"
 )
 

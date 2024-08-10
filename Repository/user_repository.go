@@ -2,14 +2,17 @@ package repository
 
 import (
 	"context"
+	"log"
 	"time"
 
 	domain "github.com/Task-Management-go/Domain"
+	"github.com/Task-Management-go/Domain/err"
 	infrastructure "github.com/Task-Management-go/Infrastructure"
-	err "github.com/Task-Management-go/errors"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type UserRepository struct {
@@ -18,6 +21,43 @@ type UserRepository struct {
 
 func NewUserRepo(client *mongo.Client) *UserRepository {
 	userCollection := client.Database("task-management").Collection("users")
+	cursor, err := userCollection.Indexes().List(context.TODO())
+	if err != nil {
+		log.Printf("could not list indexes: %v", err)
+	}
+	defer cursor.Close(context.TODO())
+
+	var indexes []bson.M
+	if err := cursor.All(context.TODO(), &indexes); err != nil {
+		log.Printf("could not parse indexes: %v", err)
+	}
+
+	// Check if the "username" index already exists
+	indexExists := false
+	for _, index := range indexes {
+		key := index["key"].(bson.M)
+		if len(key) == 1 && key["username"] != nil {
+			indexExists = true
+			break
+		}
+	}
+
+	// If the index does not exist, create it
+	if !indexExists {
+		indexModel := mongo.IndexModel{
+			Keys:    bson.D{{Key: "username", Value: 1}}, // Create index on the "username" field
+			Options: options.Index().SetUnique(true),     // Ensure the index is unique
+		}
+
+		// Create the index
+		_, err = userCollection.Indexes().CreateOne(context.TODO(), indexModel)
+		if err != nil {
+			log.Printf("could not create index: %v", err)
+		}
+	} else {
+		log.Println("username index already exists")
+	}
+
 	return &UserRepository{
 		collection: *userCollection,
 	}
@@ -77,7 +117,7 @@ func (ur *UserRepository) PromoteUser(username string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	existingUser, e := ur.GetUserByUsername(username)
- 
+
 	if e != nil {
 		return false, err.NewNotFound("User Not Found")
 	}

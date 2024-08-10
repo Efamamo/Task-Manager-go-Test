@@ -5,7 +5,8 @@ import (
 	"time"
 
 	domain "github.com/Task-Management-go/Domain"
-	err "github.com/Task-Management-go/errors"
+	"github.com/Task-Management-go/Domain/err"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
