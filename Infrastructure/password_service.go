@@ -5,14 +5,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func HasPassword(password string) (string, error) {
+func HashPassword(password string) (string, error) {
 	hashedPassword, e := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
 	if e != nil {
 		return "", e
 	}
 	return string(hashedPassword), nil
-
 }
 
 func ComparePassword(euPassword string, uPassword string) (bool, error) {

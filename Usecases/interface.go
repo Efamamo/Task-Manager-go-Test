@@ -5,7 +5,7 @@ import domain "github.com/Task-Management-go/Domain"
 type TaskInterface interface {
 	FindAll() (*[]domain.Task, error)
 	FindOne(string) (*domain.Task, error)
-	UpdateOne(id string, updatedTask domain.Task) (*domain.Task, error)
+	UpdateOne(id string, updatedTask domain.Task) error
 	DeleteOne(string) (*domain.Task, error)
 	Save(domain.Task) (*domain.Task, error)
 }

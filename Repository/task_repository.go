@@ -27,25 +27,25 @@ func (tr *TaskRepository) FindAll() (*[]domain.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	cur, err := tr.collection.Find(ctx, bson.D{})
-	if err != nil {
-		return nil, err
+	cur, e := tr.collection.Find(ctx, bson.D{})
+	if e != nil {
+		return nil, err.NewUnexpected("Server Error")
 	}
 
 	tasks := make([]domain.Task, 0)
 	for cur.Next(ctx) {
 		var task domain.Task
 
-		err := cur.Decode(&task)
+		e := cur.Decode(&task)
 
-		if err != nil {
-			return nil, err
+		if e != nil {
+			return nil, err.NewUnexpected("Server Error")
 		}
 		tasks = append(tasks, task)
 	}
 
 	if cur.Err() != nil {
-		return nil, err
+		return nil, err.NewUnexpected("Server Error")
 	}
 
 	cur.Close(ctx)
@@ -77,19 +77,16 @@ func (tr *TaskRepository) FindOne(id string) (*domain.Task, error) {
 	return &task, nil
 }
 
-func (tr *TaskRepository) UpdateOne(id string, updatedTask domain.Task) (*domain.Task, error) {
+func (tr *TaskRepository) UpdateOne(id string, updatedTask domain.Task) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	_, e := tr.FindOne(id)
 	if e != nil {
-		return nil, e
+		return e
 	}
 
-	ID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
+	ID, _ := primitive.ObjectIDFromHex(id)
 
 	filter := bson.M{"_id": ID}
 
@@ -103,42 +100,35 @@ func (tr *TaskRepository) UpdateOne(id string, updatedTask domain.Task) (*domain
 	}
 
 	// Update the document that matches the filter
-	_, err = tr.collection.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return nil, err
+	_, e = tr.collection.UpdateOne(ctx, filter, update)
+	if e != nil {
+		return err.NewUnauthorized("Server Error")
 	}
-
-	utask, err := tr.FindOne(id)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return utask, nil
+	return nil
 
 }
 
 func (tr *TaskRepository) DeleteOne(ID string) (*domain.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	id, err := primitive.ObjectIDFromHex(ID)
+	id, e := primitive.ObjectIDFromHex(ID)
 
-	if err != nil {
-		return nil, err
+	if e != nil {
+		return nil, err.NewValidation("invalid ID format")
 	}
 
-	task, err := tr.FindOne(ID)
-	if err != nil {
-		return nil, err
+	task, e := tr.FindOne(ID)
+	if e != nil {
+		return nil, err.NewNotFound("Task Not Found")
 	}
 
 	filter := bson.M{"_id": id}
 
 	// Delete the document that matches the filter
-	_, err = tr.collection.DeleteOne(ctx, filter)
+	_, e = tr.collection.DeleteOne(ctx, filter)
 
-	if err != nil {
-		return nil, err
+	if e != nil {
+		return nil, err.NewUnexpected("iServer Error")
 	}
 
 	return task, nil
@@ -151,12 +141,12 @@ func (tr *TaskRepository) Save(task domain.Task) (*domain.Task, error) {
 	for {
 		task.ID = primitive.NewObjectID()
 
-		_, err := tr.collection.InsertOne(ctx, task)
+		_, e := tr.collection.InsertOne(ctx, task)
 
-		if mongo.IsDuplicateKeyError(err) {
+		if mongo.IsDuplicateKeyError(e) {
 			continue
-		} else if err != nil {
-			return nil, err
+		} else if e != nil {
+			return nil, err.NewUnexpected("Server Error")
 		}
 
 		return &task, nil

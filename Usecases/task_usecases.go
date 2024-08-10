@@ -29,19 +29,19 @@ func (ts *TaskService) GetTaskByID(id string) (*domain.Task, error) {
 	return task, nil
 }
 
-func (ts *TaskService) UpdateItem(ID string, updatedTask domain.Task) (*domain.Task, error) {
+func (ts *TaskService) UpdateItem(ID string, updatedTask domain.Task) error {
 
 	if strings.ToLower(updatedTask.Status) != "in progress" && strings.ToLower(updatedTask.Status) != "completed" && strings.ToLower(updatedTask.Status) != "pending" {
-		return nil, errors.New("status error")
+		return errors.New("status error")
 	}
 
-	utask, err := ts.TaskRepo.UpdateOne(ID, updatedTask)
+	err := ts.TaskRepo.UpdateOne(ID, updatedTask)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return utask, nil
+	return nil
 
 }
 

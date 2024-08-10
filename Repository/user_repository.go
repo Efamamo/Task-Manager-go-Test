@@ -7,7 +7,6 @@ import (
 
 	domain "github.com/Task-Management-go/Domain"
 	"github.com/Task-Management-go/Domain/err"
-	infrastructure "github.com/Task-Management-go/Infrastructure"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -98,13 +97,8 @@ func (ur *UserRepository) SignUp(user domain.User) (*domain.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	hashedPassword, e := infrastructure.HasPassword(user.Password)
-	if e != nil {
-		return nil, err.NewValidation("Password Cant Be Hashed")
-	}
-	user.Password = string(hashedPassword)
 	user.ID = primitive.NewObjectID()
-	_, e = ur.collection.InsertOne(ctx, user)
+	_, e := ur.collection.InsertOne(ctx, user)
 
 	if e != nil {
 		return nil, err.NewConflict("user with then given username already exists")
@@ -116,8 +110,8 @@ func (ur *UserRepository) SignUp(user domain.User) (*domain.User, error) {
 func (ur *UserRepository) PromoteUser(username string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	
 	existingUser, e := ur.GetUserByUsername(username)
-
 	if e != nil {
 		return false, err.NewNotFound("User Not Found")
 	}

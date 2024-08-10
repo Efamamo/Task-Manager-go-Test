@@ -130,7 +130,7 @@ func (uc *UserController) Promote(c *gin.Context) {
 	}
 
 	if promoted {
-		c.IndentedJSON(203, gin.H{"message": "User promoted"})
+		c.IndentedJSON(200, gin.H{})
 	}
 
 }

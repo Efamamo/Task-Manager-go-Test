@@ -86,7 +86,7 @@ func (tc TaskController) UpdateItem(c *gin.Context) {
 		return
 	}
 
-	task, e := tc.Service.UpdateItem(id, updatedTask)
+	e := tc.Service.UpdateItem(id, updatedTask)
 
 	if e != nil {
 		if e.Error() == "status error" {
@@ -103,7 +103,7 @@ func (tc TaskController) UpdateItem(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, *task)
+	c.IndentedJSON(http.StatusOK, gin.H{})
 }
 
 func (tc TaskController) DeleteTask(c *gin.Context) {

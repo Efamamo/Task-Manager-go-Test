@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -9,7 +10,19 @@ import (
 func AuthMiddleware(isAdmin bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		token, e := ValidateToken(authHeader)
+		if authHeader == "" {
+			c.IndentedJSON(401, gin.H{"message": "unauthorized"})
+			c.Abort()
+			return
+		}
+
+		authParts := strings.Split(authHeader, " ")
+		if len(authParts) != 2 || strings.ToLower(authParts[0]) != "bearer" {
+			c.IndentedJSON(401, gin.H{"message": "unauthorized"})
+			return
+		}
+
+		token, e := ValidateToken(authParts[1])
 
 		if e != nil {
 			c.IndentedJSON(http.StatusUnauthorized, gin.H{"error": e.Error()})
@@ -20,7 +33,7 @@ func AuthMiddleware(isAdmin bool) gin.HandlerFunc {
 			allow := ValidateAdmin(token)
 
 			if !allow {
-				c.IndentedJSON(http.StatusUnauthorized, gin.H{"error": "forbidden"})
+				c.IndentedJSON(http.StatusUnauthorized, gin.H{"error": "Forbidden"})
 				c.Abort()
 				return
 			}
