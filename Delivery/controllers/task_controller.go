@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	domain "github.com/Task-Management-go/Domain"
+	"github.com/Task-Management-go/Domain/err"
 	usecases "github.com/Task-Management-go/Usecases"
 
-	err "github.com/Task-Management-go/errors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
