@@ -13,7 +13,7 @@ import (
 )
 
 type UserController struct {
-	Service usecases.UserService
+	Service usecases.IUserService
 }
 
 func (uc *UserController) SignUp(c *gin.Context) {

@@ -45,7 +45,7 @@ func main() {
 
 	var UserRepository usecases.IUserRepository = repository.NewUserRepo(client)
 	UserService := usecases.UserService{UserRepo: UserRepository, PasswordService: PasswordService, JwtService: JwtService}
-	userController := controller.UserController{Service: UserService}
+	userController := controller.UserController{Service: &UserService}
 
 	router.SetUpRouter(taskController, userController)
 
