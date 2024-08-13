@@ -1,4 +1,4 @@
-name: Go
+name: Go CI
 
 on:
   push:
@@ -10,6 +10,17 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd="mongo --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
     steps:
     - uses: actions/checkout@v4
 
@@ -20,6 +31,13 @@ jobs:
 
     - name: Build
       run: make build
+
+    - name: Wait for MongoDB
+      run: |
+        until docker exec $(docker ps -q -f ancestor=mongo:latest) mongo --eval 'db.runCommand({ ping: 1 })'; do
+          echo "Waiting for MongoDB to be ready..."
+          sleep 2
+        done
 
     - name: Test
       run: make test
