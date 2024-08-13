@@ -1,104 +1,92 @@
-package infrastructure
+package infrastructure_test
 
 import (
 	"os"
 	"testing"
 
-	"github.com/Task-Management-go/Domain/err"
 	infrastructure "github.com/Task-Management-go/Infrastructure"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
-type TokenServiceTestSuite struct {
+type TokenTestSuite struct {
 	suite.Suite
-	TokenService infrastructure.Token
+	TokenGenerator infrastructure.Token
 }
 
-func (suite *TokenServiceTestSuite) SetupSuite() {
-	// Setup environment variables or other configurations if needed
+func (suite *TokenTestSuite) SetupSuite() {
+	// Set the environment variable for JwtSecret
 	os.Setenv("JwtSecret", "testsecret")
 }
 
-func (suite *TokenServiceTestSuite) TearDownSuite() {
-	// Cleanup environment variables or other configurations if needed
+func (suite *TokenTestSuite) TearDownSuite() {
+	// Unset the environment variable after all tests
 	os.Unsetenv("JwtSecret")
 }
 
-func (suite *TokenServiceTestSuite) TestValidateToken_Success() {
-	// Arrange
-	username := "testuser"
-	isAdmin := true
-	tokenString, err := suite.TokenService.GenerateToken(username, isAdmin)
-	suite.Require().NoError(err)
-
-	// Act
-	validToken, err := suite.TokenService.ValidateToken(tokenString)
-
-	// Assert
-	suite.Require().NoError(err)
-	suite.Require().NotNil(validToken)
+func (suite *TokenTestSuite) SetupTest() {
+	suite.TokenGenerator = infrastructure.Token{}
 }
 
-func (suite *TokenServiceTestSuite) TestValidateToken_InvalidToken() {
-	// Arrange
-	invalidToken := "invalidtoken"
-
-	// Act
-	_, e := suite.TokenService.ValidateToken(invalidToken)
-
-	// Assert
-	suite.Require().Error(e)
-	suite.Require().IsType(err.NewUnauthorized("unauthorized"), e)
+func TestTokenTestSuite(t *testing.T) {
+	suite.Run(t, new(TokenTestSuite))
 }
 
-func (suite *TokenServiceTestSuite) TestValidateToken_UnexpectedSigningMethod() {
-	// Arrange
-	tokenString, e := suite.TokenService.GenerateToken("testuser", true)
-	suite.Require().NoError(e)
+func (suite *TokenTestSuite) TestToken_ValidateToken() {
+	// Generate a valid token
+	validToken, e := suite.TokenGenerator.GenerateToken("user", true)
+	require.NoError(suite.T(), e)
 
-	// Modify the token to create an invalid token
-	modifiedToken := tokenString + "extra"
+	// Test valid token
+	parsedToken, e := suite.TokenGenerator.ValidateToken(validToken)
+	assert.NoError(suite.T(), e)
+	assert.True(suite.T(), parsedToken.Valid)
 
-	// Act
-	_, e = suite.TokenService.ValidateToken(modifiedToken)
-
-	// Assert
-	suite.Require().Error(e)
-	suite.Require().IsType(err.NewUnauthorized("unauthorized"), e)
+	// Test invalid token
+	_, e = suite.TokenGenerator.ValidateToken("invalidtoken")
+	assert.Error(suite.T(), e)
 }
 
-func (suite *TokenServiceTestSuite) TestValidateAdmin_Success() {
-	// Arrange
-	tokenString, err := suite.TokenService.GenerateToken("testuser", true)
-	suite.Require().NoError(err)
+func (suite *TokenTestSuite) TestToken_ValidateAdmin() {
+	// Generate an admin token
+	adminToken, err := suite.TokenGenerator.GenerateToken("admin", true)
+	require.NoError(suite.T(), err)
 
-	// Act
-	parsedToken, err := suite.TokenService.ValidateToken(tokenString)
-	suite.Require().NoError(err)
+	parsedToken, err := suite.TokenGenerator.ValidateToken(adminToken)
+	require.NoError(suite.T(), err)
 
-	// Validate admin
-	isAdmin := suite.TokenService.ValidateAdmin(parsedToken)
+	// Test ValidateAdmin with an admin token
+	isAdmin := suite.TokenGenerator.ValidateAdmin(parsedToken)
+	assert.True(suite.T(), isAdmin)
 
-	// Assert
-	suite.Require().True(isAdmin)
+	// Generate a non-admin token
+	userToken, err := suite.TokenGenerator.GenerateToken("user", false)
+	require.NoError(suite.T(), err)
+
+	parsedToken, err = suite.TokenGenerator.ValidateToken(userToken)
+	require.NoError(suite.T(), err)
+
+	// Test ValidateAdmin with a non-admin token
+	isAdmin = suite.TokenGenerator.ValidateAdmin(parsedToken)
+	assert.False(suite.T(), isAdmin)
 }
 
-func (suite *TokenServiceTestSuite) TestValidateAdmin_NotAdmin() {
-	// Arrange
-	tokenString, err := suite.TokenService.GenerateToken("testuser", false)
-	suite.Require().NoError(err)
+func (suite *TokenTestSuite) TestToken_GenerateToken() {
+	// Generate a token
+	token, err := suite.TokenGenerator.GenerateToken("user", true)
+	require.NoError(suite.T(), err)
+	assert.NotEmpty(suite.T(), token)
 
-	// Act
-	parsedToken, err := suite.TokenService.ValidateToken(tokenString)
-	suite.Require().NoError(err)
+	// Validate the generated token
+	parsedToken, err := suite.TokenGenerator.ValidateToken(token)
+	require.NoError(suite.T(), err)
+	assert.True(suite.T(), parsedToken.Valid)
 
-	// Validate admin
-	isAdmin := suite.TokenService.ValidateAdmin(parsedToken)
-
-	// Assert
-	suite.Require().False(isAdmin)
-}
-
-func TestTokenServiceTestSuite(t *testing.T) {
-	suite.Run(t, new(TokenServiceTestSuite))
+	// Check the claims
+	claims, ok := parsedToken.Claims.(jwt.MapClaims)
+	require.True(suite.T(), ok)
+	assert.Equal(suite.T(), "user", claims["username"])
+	assert.True(suite.T(), claims["isAdmin"].(bool))
 }

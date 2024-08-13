@@ -13,6 +13,10 @@ type PassServiceTestSuite struct {
 	PassService infrastructure.Pass
 }
 
+func TestPassServiceTestSuite(t *testing.T) {
+	suite.Run(t, new(PassServiceTestSuite))
+}
+
 func (suite *PassServiceTestSuite) TestHashPassword_Success() {
 	// Arrange
 	password := "mySecurePassword"
@@ -53,8 +57,4 @@ func (suite *PassServiceTestSuite) TestComparePassword_InvalidPassword() {
 	suite.Require().Error(e)
 	suite.Require().False(isValid)
 	suite.Require().IsType(err.NewUnauthorized("Invalid Credentials"), e)
-}
-
-func TestPassServiceTestSuite(t *testing.T) {
-	suite.Run(t, new(PassServiceTestSuite))
 }

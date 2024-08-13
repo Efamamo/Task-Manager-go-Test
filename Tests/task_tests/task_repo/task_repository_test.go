@@ -7,36 +7,42 @@ import (
 
 	domain "github.com/Task-Management-go/Domain"
 	repository "github.com/Task-Management-go/Repository"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func setup() (*mongo.Client, func(), error) {
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
-	client, err := mongo.Connect(context.Background(), clientOptions)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	cleanup := func() {
-		collection := client.Database("task-management").Collection("tasks")
-		collection.DeleteMany(context.TODO(), bson.D{{}})
-
-		client.Disconnect(context.Background())
-	}
-
-	return client, cleanup, nil
+type TaskRepositoryTestSuite struct {
+	suite.Suite
+	client     *mongo.Client
+	taskRepo   repository.TaskRepository
+	collection *mongo.Collection
 }
 
-func TestTaskRepository_FindAll(t *testing.T) {
-	client, cleanup, err := setup()
-	assert.NoError(t, err)
-	defer cleanup()
+func (suite *TaskRepositoryTestSuite) SetupSuite() {
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	client, err := mongo.Connect(context.Background(), clientOptions)
+	suite.Require().NoError(err)
 
-	taskRepo := repository.NewTaskRepo(client)
+	suite.client = client
+	suite.collection = client.Database("task-management").Collection("tasks")
+	suite.taskRepo = *repository.NewTaskRepo(client)
+}
 
+func (suite *TaskRepositoryTestSuite) SetupTest() {
+	// Clear the collection before each test
+	_, err := suite.collection.DeleteMany(context.TODO(), bson.D{{}})
+	suite.Require().NoError(err)
+}
+
+func (suite *TaskRepositoryTestSuite) TearDownSuite() {
+	// Disconnect client after all tests
+	err := suite.client.Disconnect(context.Background())
+	suite.Require().NoError(err)
+}
+
+func (suite *TaskRepositoryTestSuite) TestTaskRepository_FindAll() {
 	// Insert sample data
 	task1 := domain.Task{
 		Title:       "Task 1",
@@ -51,23 +57,17 @@ func TestTaskRepository_FindAll(t *testing.T) {
 		Status:      "completed",
 	}
 
-	_, err = taskRepo.Save(task1)
-	assert.NoError(t, err)
-	_, err = taskRepo.Save(task2)
-	assert.NoError(t, err)
+	_, err := suite.taskRepo.Save(task1)
+	suite.Require().NoError(err)
+	_, err = suite.taskRepo.Save(task2)
+	suite.Require().NoError(err)
 
-	tasks, err := taskRepo.FindAll()
-	assert.NoError(t, err)
-	assert.Len(t, *tasks, 2)
+	tasks, err := suite.taskRepo.FindAll()
+	suite.Require().NoError(err)
+	suite.Len(*tasks, 2)
 }
 
-func TestTaskRepository_FindOne(t *testing.T) {
-	client, cleanup, err := setup()
-	assert.NoError(t, err)
-	defer cleanup()
-
-	taskRepo := repository.NewTaskRepo(client)
-
+func (suite *TaskRepositoryTestSuite) TestTaskRepository_FindOne() {
 	// Insert a sample task
 	task := domain.Task{
 		Title:       "Task 1",
@@ -75,21 +75,15 @@ func TestTaskRepository_FindOne(t *testing.T) {
 		DueDate:     time.Now(),
 		Status:      "open",
 	}
-	savedTask, err := taskRepo.Save(task)
-	assert.NoError(t, err)
+	savedTask, err := suite.taskRepo.Save(task)
+	suite.Require().NoError(err)
 
-	retrievedTask, err := taskRepo.FindOne(savedTask.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, savedTask.ID, retrievedTask.ID)
+	retrievedTask, err := suite.taskRepo.FindOne(savedTask.ID)
+	suite.Require().NoError(err)
+	suite.Equal(savedTask.ID, retrievedTask.ID)
 }
 
-func TestTaskRepository_Save(t *testing.T) {
-	client, cleanup, err := setup()
-	assert.NoError(t, err)
-	defer cleanup()
-
-	taskRepo := repository.NewTaskRepo(client)
-
+func (suite *TaskRepositoryTestSuite) TestTaskRepository_Save() {
 	task := domain.Task{
 		Title:       "New Task",
 		Description: "New Description",
@@ -97,26 +91,20 @@ func TestTaskRepository_Save(t *testing.T) {
 		Status:      "open",
 	}
 
-	savedTask, err := taskRepo.Save(task)
-	assert.NoError(t, err)
-	assert.Equal(t, task.Title, savedTask.Title)
+	savedTask, err := suite.taskRepo.Save(task)
+	suite.Require().NoError(err)
+	suite.Equal(task.Title, savedTask.Title)
 }
 
-func TestTaskRepository_UpdateOne(t *testing.T) {
-	client, cleanup, err := setup()
-	assert.NoError(t, err)
-	defer cleanup()
-
-	taskRepo := repository.NewTaskRepo(client)
-
+func (suite *TaskRepositoryTestSuite) TestTaskRepository_UpdateOne() {
 	task := domain.Task{
 		Title:       "Task to Update",
 		Description: "Description",
 		DueDate:     time.Now(),
 		Status:      "open",
 	}
-	savedTask, err := taskRepo.Save(task)
-	assert.NoError(t, err)
+	savedTask, err := suite.taskRepo.Save(task)
+	suite.Require().NoError(err)
 
 	updatedTask := domain.Task{
 		Title:       "Updated Title",
@@ -125,37 +113,35 @@ func TestTaskRepository_UpdateOne(t *testing.T) {
 		Status:      "completed",
 	}
 
-	err = taskRepo.UpdateOne(savedTask.ID, updatedTask)
-	assert.NoError(t, err)
+	err = suite.taskRepo.UpdateOne(savedTask.ID, updatedTask)
+	suite.Require().NoError(err)
 
-	retrievedTask, err := taskRepo.FindOne(savedTask.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, updatedTask.Title, retrievedTask.Title)
-	assert.Equal(t, updatedTask.Description, retrievedTask.Description)
-	assert.Equal(t, updatedTask.Status, retrievedTask.Status)
+	retrievedTask, err := suite.taskRepo.FindOne(savedTask.ID)
+	suite.Require().NoError(err)
+	suite.Equal(updatedTask.Title, retrievedTask.Title)
+	suite.Equal(updatedTask.Description, retrievedTask.Description)
+	suite.Equal(updatedTask.Status, retrievedTask.Status)
 }
 
-func TestTaskRepository_DeleteOne(t *testing.T) {
-	client, cleanup, err := setup()
-	assert.NoError(t, err)
-	defer cleanup()
-
-	taskRepo := repository.NewTaskRepo(client)
-
+func (suite *TaskRepositoryTestSuite) TestTaskRepository_DeleteOne() {
 	task := domain.Task{
 		Title:       "Task to Delete",
 		Description: "Description",
 		DueDate:     time.Now(),
 		Status:      "open",
 	}
-	savedTask, err := taskRepo.Save(task)
-	assert.NoError(t, err)
+	savedTask, err := suite.taskRepo.Save(task)
+	suite.Require().NoError(err)
 
-	deletedTask, err := taskRepo.DeleteOne(savedTask.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, savedTask.ID, deletedTask.ID)
+	deletedTask, err := suite.taskRepo.DeleteOne(savedTask.ID)
+	suite.Require().NoError(err)
+	suite.Equal(savedTask.ID, deletedTask.ID)
 
-	_, err = taskRepo.FindOne(savedTask.ID)
-	assert.Error(t, err)
-	assert.Equal(t, "task not found", err.Error())
+	_, err = suite.taskRepo.FindOne(savedTask.ID)
+	suite.Require().Error(err)
+	suite.Equal("task not found", err.Error())
+}
+
+func TestTaskRepositoryTestSuite(t *testing.T) {
+	suite.Run(t, new(TaskRepositoryTestSuite))
 }
