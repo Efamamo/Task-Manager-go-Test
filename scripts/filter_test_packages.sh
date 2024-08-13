@@ -7,7 +7,7 @@ exclude_packages=(
 )
 
 # Find all packages with .go files
-all_packages=$(go list ./Tests)
+all_packages=$(go list ./Tests/...)
 
 # Filter out the excluded packages
 for exclude in "${exclude_packages[@]}"; do
