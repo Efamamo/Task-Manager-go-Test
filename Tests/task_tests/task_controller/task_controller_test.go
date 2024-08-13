@@ -33,6 +33,10 @@ func (suite *TaskControllerTestSuite) SetupTest() {
 	suite.router = gin.Default()
 }
 
+func TestTaskControllerTestSuite(t *testing.T) {
+	suite.Run(t, new(TaskControllerTestSuite))
+}
+
 func (suite *TaskControllerTestSuite) TestGetTasks_Success() {
 	t1, _ := time.Parse(time.RFC3339Nano, "2024-08-08T09:41:00.564241718+03:00")
 	t2, _ := time.Parse(time.RFC3339Nano, "2024-08-08T09:41:00.564241718+05:00")
@@ -123,8 +127,4 @@ func (suite *TaskControllerTestSuite) TestDeleteTask_Success() {
 
 	assert.Equal(suite.T(), http.StatusAccepted, rr.Code)
 	suite.mockTaskService.AssertExpectations(suite.T())
-}
-
-func TestTaskControllerTestSuite(t *testing.T) {
-	suite.Run(t, new(TaskControllerTestSuite))
 }
