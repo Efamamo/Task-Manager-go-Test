@@ -1,4 +1,4 @@
-package task_repository_test
+package repository_test
 
 import (
 	"context"
