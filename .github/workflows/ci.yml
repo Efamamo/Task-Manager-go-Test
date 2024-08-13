@@ -28,7 +28,11 @@ jobs:
           go-version: 1.20
 
       - name: Wait for MongoDB
-        run: until nc -z localhost 27017; do echo "Waiting for MongoDB..."; sleep 1; done
+        run: |
+          while ! nc -z localhost 27017; do
+            echo "Waiting for MongoDB to start...";
+            sleep 1;
+          done
 
       - name: Install dependencies
         run: go mod tidy
