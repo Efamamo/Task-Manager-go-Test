@@ -1,7 +1,6 @@
 package infrastructure_test
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -57,10 +56,6 @@ func (suite *AuthMiddlewareTestSuite) TestAuthMiddleware_InvalidTokenFormat() {
 	// Act
 	r.ServeHTTP(resp, req)
 
-	// Print the response body for debugging
-	fmt.Println("Response Body:", resp.Body.String())
-
-	// Assert
 	assert.Equal(suite.T(), http.StatusUnauthorized, resp.Code)
 	assert.JSONEq(suite.T(), `{"message": "unauthorized"}`, resp.Body.String())
 }
