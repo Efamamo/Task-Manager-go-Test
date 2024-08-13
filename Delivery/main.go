@@ -41,7 +41,7 @@ func main() {
 	var PasswordService usecases.IPasswordService = infrastructure.Pass{}
 	var JwtService usecases.IJWTService = infrastructure.Token{}
 	taskService := usecases.TaskService{TaskRepo: TaskRepository}
-	taskController := controller.TaskController{Service: taskService}
+	taskController := controller.TaskController{Service: &taskService}
 
 	var UserRepository usecases.IUserRepository = repository.NewUserRepo(client)
 	UserService := usecases.UserService{UserRepo: UserRepository, PasswordService: PasswordService, JwtService: JwtService}

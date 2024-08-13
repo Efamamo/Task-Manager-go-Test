@@ -13,7 +13,7 @@ import (
 )
 
 type TaskController struct {
-	Service usecases.TaskService
+	Service usecases.ITaskService
 }
 
 func (tc TaskController) GetTasks(c *gin.Context) {

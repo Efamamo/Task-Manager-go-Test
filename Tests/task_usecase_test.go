@@ -6,6 +6,7 @@ import (
 	"time"
 
 	domain "github.com/Task-Management-go/Domain"
+	usecases "github.com/Task-Management-go/Usecases"
 	mocks "github.com/Task-Management-go/mocks"
 	"github.com/stretchr/testify/suite"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,7 +14,7 @@ import (
 
 type TaskSuite struct {
 	suite.Suite
-	taskService TaskService
+	taskService usecases.TaskService
 	mockRepo    *mocks.MockTaskRepository
 }
 
@@ -23,7 +24,7 @@ func TestTaskSuite(t *testing.T) {
 
 func (suite *TaskSuite) SetupTest() {
 	suite.mockRepo = new(mocks.MockTaskRepository)
-	suite.taskService = TaskService{TaskRepo: suite.mockRepo}
+	suite.taskService = usecases.TaskService{TaskRepo: suite.mockRepo}
 }
 
 func (suite *TaskSuite) TestGetTasks() {

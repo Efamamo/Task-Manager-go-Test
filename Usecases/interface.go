@@ -31,3 +31,17 @@ type IJWTService interface {
 	ValidateAdmin(token *jwt.Token) bool
 	GenerateToken(username string, isAdmin bool) (string, error)
 }
+
+type IUserService interface {
+	SignUp(user domain.User) (*domain.User, error)
+	Login(user domain.User) (string, error)
+	Promote(username string) (bool, error)
+}
+
+type ITaskService interface {
+	GetTasks() (*[]domain.Task, error)
+	GetTaskByID(id string) (*domain.Task, error)
+	UpdateItem(id string, task domain.Task) error
+	DeleteTask(id string) (*domain.Task, error)
+	AddTask(task domain.Task) (*domain.Task, error)
+}
