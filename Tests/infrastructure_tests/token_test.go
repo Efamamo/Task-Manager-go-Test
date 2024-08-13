@@ -17,7 +17,6 @@ type TokenServiceTestSuite struct {
 func (suite *TokenServiceTestSuite) SetupSuite() {
 	// Setup environment variables or other configurations if needed
 	os.Setenv("JwtSecret", "testsecret")
-	suite.TokenService = suite.TokenService
 }
 
 func (suite *TokenServiceTestSuite) TearDownSuite() {
