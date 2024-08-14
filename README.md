@@ -27,5 +27,12 @@ Replace `"your-mongodb-connection-string"` with your actual MongoDB connection s
 To run the application, use the following command:
 
 ```sh
-go run .
+go run Delivery/main,go
 ```
+
+## Testing
+
+```sh
+go test $(go list ./Tests/... ) -v
+```
+
